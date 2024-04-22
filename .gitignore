@@ -159,5 +159,5 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-# *abacus_API_key
-# *helloTess_API_key
+*abacus_API_key
+*helloTess_API_key
