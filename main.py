@@ -1,59 +1,10 @@
 import dash
 from dash import dcc, html, Input, Output
 import plotly.graph_objs as go
-import numpy as np
-from datetime import datetime, timedelta
-import pandas as pd
-import requests
+from datetime import datetime
+from src.dashboard import Dashboard
 
-np.random.seed(0)
-
-# Placeholder for API keys
-HELLOTESS_API_KEY = 'your_hellotess_api_key'
-ABACUS_API_KEY = 'your_abacus_api_key'
-
-# Function to get "Umsatz pro Stunde pro Standort" from HelloTess API
-def get_hello_tess_data():
-    #TODO implement
-    # Placeholder for the actual HelloTess API request
-    pass
-
-# Function to get data from Abacus API
-def get_abacus_data():
-    # Placeholder for the actual Abacus API request
-    #TODO implement
-    pass
-
-# Function to generate sample data for a given date range
-def generate_sample_data(locations, hours):
-    data = {}
-    for location in locations:
-        # Create a DataFrame for each location with random data
-        df = pd.DataFrame({
-            'Umsatz in CHF pro MA Arbeitsstunde': np.random.randint(50, 350, size=len(hours)),
-            'Arbeitsstunden pro Standort pro Stundenblock': np.random.randint(1, 10, size=len(hours)),
-            'Arbeitsstunden Produktion pro Tag': np.random.randint(10, 100, size=len(hours)),
-            'Anz. produzierter Kübel pro Tag': np.random.randint(0, 50, size=len(hours))
-        }, index=hours)
-        data[location] = df
-    return data
-
-hours = [f"{hour}:00" for hour in range(12, 24)]
-locations = [
-    'GdB Mattenhof (BE)',
-    'GdB Brupbacherplatz (ZH)',
-    "GdB Breitenrain (BE)",
-    "GdB Gerolds Garten (ZH)",
-    "GdB Kleinbasel ()", #TODO add missing canton
-    "GdB Langgasse (BE)",
-    "GdB Marzili (BE)",
-    "GdB Mattenhof (BE)",
-    "Roschibachplatz ()", #TODO add missing canton
-    "Zollstrasse (ZH)"
-    ]
-
-#TODO remove this once data loading has been implemented
-data = generate_sample_data(locations, hours)
+dashboard = Dashboard()
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 
@@ -66,15 +17,17 @@ app.layout = html.Div(children=[
                 html.Label('Wählen Sie Standorte:', style={'fontWeight': 'bold'}),
                 dcc.Dropdown(
                     id='location-dropdown',
-                    options=[{'label': location, 'value': location} for location in locations],
-                    value=[locations[0]],  # default value
+                    options=[{'label': location, 'value': location} for location in dashboard.locations],
+                    value=[dashboard.locations[0]],  # default value
                     multi=True  # allow multiple selections
                 ),
                 html.Label('Wählen Sie das Datum/die Woche:', style={'fontWeight': 'bold', 'marginTop': '20px'}),
                 dcc.DatePickerRange(
                     id='date-picker-range',
-                    start_date=datetime.now().date() - timedelta(days=7),
-                    end_date=datetime.now().date(),
+                    start_date=datetime.strptime("01.04.2020", "%d.%m.%Y").date(),
+                    end_date=datetime.strptime("30.04.2020", "%d.%m.%Y").date(),
+                    #start_date=datetime.now().date() - timedelta(days=7),
+                    #end_date=datetime.now().date(),
                     display_format='DD.MM.YYYY',
                     style={'marginTop': '10px'}
                 ),
@@ -92,31 +45,35 @@ app.layout = html.Div(children=[
      Input('date-picker-range', 'end_date')]
 )
 
-def update_output(selected_locations, start_date, end_date):
+def update_output(selected_locations, start_date: str|datetime, end_date: str|datetime):
     graphs = []
+    # Filter for time range
+    df_date_filtered = dashboard.filter_date(start_date, end_date)
     # Getting data for each location
     for location in selected_locations:
-        # Call the API functions to get data
-        hello_tess_data = get_hello_tess_data()
-        abacus_data = get_abacus_data()
-        location_data = data[location]
-        
+        # Filter data for location
+        df_location_filtered = dashboard.filter_location(selected_locations, df_date_filtered)
+        # Group
+        df_grouped = dashboard.group_by_hour(df_location_filtered)
+        _x = df_grouped.index.tolist()
+        _y = df_grouped.tolist()
+
         graphs.append(dcc.Graph(
             figure=go.Figure(
                 data=[
                     go.Bar(
-                        x=hours,
-                        y=location_data['Umsatz in CHF pro MA Arbeitsstunde'],
-                        name=f'Umsatz in CHF pro MA Arbeitsstunde',
+                        x=_x,
+                        y=_y,
+                        name='Umsatz in CHF',
                         marker_color='rgba(251, 231, 239, 1)',
-                        text=location_data['Umsatz in CHF pro MA Arbeitsstunde'],
+                        text=_y,
                         textposition='auto',
                     )
                 ],
                 layout=go.Layout(
                     title=f'{location} ({start_date} bis {end_date})',
                     xaxis=dict(title='Uhrzeit', showgrid=False),
-                    yaxis=dict(title='Umsatz in CHF pro MA Arbeitsstunde', showgrid=False),
+                    yaxis=dict(title='Umsatz in CHF', showgrid=False),
                     paper_bgcolor='rgba(0,0,0,0)',
                     plot_bgcolor='rgba(0,0,0,0)',
                     font=dict(size=12),
@@ -125,6 +82,7 @@ def update_output(selected_locations, start_date, end_date):
             ),
             style={'height': 300}
         ))
+
     return graphs
 
 # Run the server
