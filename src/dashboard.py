@@ -3,6 +3,8 @@ from datetime import datetime
 from .data_loaders import hello_tess_loader as htl
 from .data_loaders import abacus_loader as abal
 
+from dash import dcc
+import plotly.graph_objs as go
 
 class Dashboard():
     """
@@ -30,7 +32,7 @@ class Dashboard():
         Sets the attribute locations to an array of unique locations from df_ht.
         Sets the attribute df_aba to the DataFrame obtained from abacus_loader.
         """
-        self.df_ht: pd.DataFrame = htl.get_hello_tess_df()
+        self.df_ht: pd.DataFrame = htl.get_hello_tess_invoice_df()
         self.locations = self.df_ht["location"].unique()
 
         self.df_aba: pd.DataFrame = abal.get_abacus_df()
@@ -121,3 +123,43 @@ class Dashboard():
     
         df_grouped: pd.DataFrame = df.groupby(df["date"].dt.hour)["price"].mean().round(2)
         return df_grouped
+
+    def get_bar_graphs(self, selected_locations, start_date: str|datetime, end_date: str|datetime) -> list[dcc.Graph]:
+        graphs = []
+        # Filter for time range
+        df_date_filtered = self.filter_date(start_date, end_date)
+        # Getting data for each location
+        for location in selected_locations:
+            # Filter data for location
+            df_location_filtered = self.filter_location(selected_locations, df_date_filtered)
+            # Group
+            df_grouped = self.group_by_hour(df_location_filtered)
+            _x = df_grouped.index.tolist()
+            _y = df_grouped.tolist()
+
+            graphs.append(dcc.Graph(
+                figure=go.Figure(
+                    data=[
+                        go.Bar(
+                            x=_x,
+                            y=_y,
+                            name='Durchschnittlicher Umsatz in CHF',
+                            marker_color='rgba(251, 231, 239, 1)',
+                            text=_y,
+                            textposition='auto',
+                        )
+                    ],
+                    layout=go.Layout(
+                        title=f'{location} ({start_date} bis {end_date})',
+                        xaxis=dict(title='Uhrzeit', showgrid=False),
+                        yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(size=12),
+                        margin=dict(l=40, r=40, t=40, b=40),
+                    )
+                ),
+                style={'height': 300}
+            ))
+
+        return graphs

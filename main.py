@@ -1,6 +1,5 @@
 import dash
 from dash import dcc, html, Input, Output
-import plotly.graph_objs as go
 from datetime import datetime
 from src.dashboard import Dashboard
 
@@ -45,45 +44,8 @@ app.layout = html.Div(children=[
      Input('date-picker-range', 'end_date')]
 )
 
-def update_output(selected_locations, start_date: str|datetime, end_date: str|datetime):
-    graphs = []
-    # Filter for time range
-    df_date_filtered = dashboard.filter_date(start_date, end_date)
-    # Getting data for each location
-    for location in selected_locations:
-        # Filter data for location
-        df_location_filtered = dashboard.filter_location(selected_locations, df_date_filtered)
-        # Group
-        df_grouped = dashboard.group_by_hour(df_location_filtered)
-        _x = df_grouped.index.tolist()
-        _y = df_grouped.tolist()
-
-        graphs.append(dcc.Graph(
-            figure=go.Figure(
-                data=[
-                    go.Bar(
-                        x=_x,
-                        y=_y,
-                        name='Umsatz in CHF',
-                        marker_color='rgba(251, 231, 239, 1)',
-                        text=_y,
-                        textposition='auto',
-                    )
-                ],
-                layout=go.Layout(
-                    title=f'{location} ({start_date} bis {end_date})',
-                    xaxis=dict(title='Uhrzeit', showgrid=False),
-                    yaxis=dict(title='Umsatz in CHF', showgrid=False),
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    font=dict(size=12),
-                    margin=dict(l=40, r=40, t=40, b=40),
-                )
-            ),
-            style={'height': 300}
-        ))
-
-    return graphs
+def update_output(selected_locations, start_date: str|datetime, end_date: str|datetime) -> list[dcc.Graph]:
+    return dashboard.get_bar_graphs(selected_locations, start_date, end_date)
 
 # Run the server
 if __name__ == '__main__':

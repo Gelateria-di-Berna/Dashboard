@@ -27,7 +27,7 @@ def _fetch_invoices_json() -> list[dict[str,]]:
         print("Failed to retrieve invoices. Status code:", response.status_code)
         return None
 
-def get_hello_tess_df() -> pd.DataFrame:
+def get_hello_tess_invoice_df() -> pd.DataFrame:
     data = {}
     data["location"] = []
     data["date"]  = []
