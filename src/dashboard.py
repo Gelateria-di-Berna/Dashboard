@@ -1,7 +1,7 @@
 import pandas as pd
 from datetime import datetime
-import src.data_loaders.hello_tess_loader as htl
-import src.data_loaders.abacus_loader as abl
+from .data_loaders import hello_tess_loader as htl
+from .data_loaders import abacus_loader as abal
 
 
 class Dashboard():
@@ -9,7 +9,7 @@ class Dashboard():
         self.df_ht: pd.DataFrame = htl.get_hello_tess_df()
         self.locations = self.df_ht["location"].unique()
 
-        self.df_aba: pd.DataFrame = abl.get_abacus_df()
+        self.df_aba: pd.DataFrame = abal.get_abacus_df()
         
     def filter_location(self, locations: list[str], df: pd.DataFrame = None) -> pd.DataFrame:
         if not locations:
