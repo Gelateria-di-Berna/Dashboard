@@ -36,34 +36,7 @@ class Dashboard():
         self.locations = self.df_ht["location"].unique()
 
         self.df_aba: pd.DataFrame = abal.get_abacus_df()
-        
-    def filter_location(self, locations: list[str], df: pd.DataFrame = None) -> pd.DataFrame:
-        """
-        Filter the DataFrame by the provided list of locations.
 
-        Parameters:
-        - locations (list[str]): List of locations to filter the DataFrame by.
-        - df (pd.DataFrame, optional): DataFrame to filter. If not provided, the DataFrame loaded from hello_tess_loader will be used.
-
-        Returns:
-        - pd.DataFrame: Filtered DataFrame containing only the rows with locations present in the provided list.
-
-        Raises:
-        - ValueError: If the locations list is empty.
-        - TypeError: If any element in the locations list is not a string.
-        """
-        if not locations:
-            raise ValueError("Locations list is empty. Please provide valid locations.")
-
-        if not all(isinstance(location, str) for location in locations):
-            raise TypeError("All elements in `locations` list must be strings.")
-
-        if df is None:
-            df = self.df_ht
-
-        df_filtered: pd.DataFrame = df.loc[df["location"].isin(locations)]
-        return df_filtered
-    
     def filter_date(self, start_date: str | datetime, end_date: str | datetime, df: pd.DataFrame = None) -> pd.DataFrame:
         """
         Filter the DataFrame by the provided start and end dates.
@@ -101,57 +74,116 @@ class Dashboard():
         df_filtered: pd.DataFrame = df[(df["date"].dt.date >= start_date) & (df["date"].dt.date <= end_date)]
         return df_filtered
     
-    def group_by_hour(self, df: pd.DataFrame) -> tuple[list[int], pd.Series]:
-        """
-        Group the DataFrame by hour and calculate the mean price for each hour.
-
-        Parameters:
-        - df (pd.DataFrame): The DataFrame containing the data to be grouped.
-
-        Returns:
-        - tuple[list[int], pd.Series]: A tuple containing a list of hours and a Series with the mean price for each hour.
-
-        Raises:
-        - ValueError: If the DataFrame does not contain a datetime column named 'date'.
-        - ValueError: If the DataFrame does not contain a numeric column named 'price'.
-        """
-        if 'date' not in df.columns or not pd.api.types.is_datetime64_any_dtype(df['date']):
-            raise ValueError('DataFrame must contain a datetime column named date.')
-    
-        if 'price' not in df.columns or not pd.api.types.is_numeric_dtype(df['price']):
-            raise ValueError('DataFrame must contain a numeric column named price.')
-    
-        df_grouped: pd.DataFrame = df.groupby(df["date"].dt.hour)["price"].mean().round(2)
-        return df_grouped
-
     def get_bar_graphs(self, selected_locations, start_date: str|datetime, end_date: str|datetime) -> list[dcc.Graph]:
         graphs = []
         # Filter for time range
-        df_date_filtered = self.filter_date(start_date, end_date)
+        df_date_filtered: pd.DataFrame = self.filter_date(start_date, end_date)
         # Getting data for each location
         for location in selected_locations:
             # Filter data for location
-            df_location_filtered = self.filter_location(selected_locations, df_date_filtered)
-            # Group
-            df_grouped = self.group_by_hour(df_location_filtered)
-            _x = df_grouped.index.tolist()
-            _y = df_grouped.tolist()
+            df_location_filtered: pd.DataFrame = df_date_filtered[df_date_filtered["location"] == location]
 
+            #Stunde
+            df_grouped_hour = df_location_filtered.groupby(df_location_filtered["date"].dt.hour)["price"].mean().round(2)
             graphs.append(dcc.Graph(
                 figure=go.Figure(
                     data=[
                         go.Bar(
-                            x=_x,
-                            y=_y,
+                            x=df_grouped_hour.index.tolist(),
+                            y=df_grouped_hour.tolist(),
                             name='Durchschnittlicher Umsatz in CHF',
                             marker_color='rgba(251, 231, 239, 1)',
-                            text=_y,
+                            text=df_grouped_hour.tolist(),
                             textposition='auto',
                         )
                     ],
                     layout=go.Layout(
-                        title=f'{location} ({start_date} bis {end_date})',
-                        xaxis=dict(title='Uhrzeit', showgrid=False),
+                        title=f'Stundenübersicht: {location} ({start_date} bis {end_date})',
+                        xaxis=dict(title='Uhrzeit', showgrid=False, tickmode = "linear"),
+                        yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(size=12),
+                        margin=dict(l=40, r=40, t=40, b=40),
+                    )
+                ),
+                style={'height': 300}
+            ))
+
+            # Tag
+            df_grouped_day = df_location_filtered.groupby(df_location_filtered["date"].dt.day)["price"].mean().round(2)
+            graphs.append(dcc.Graph(
+                figure=go.Figure(
+                    data=[
+                        go.Bar(
+                            x=df_grouped_day.index.tolist(),
+                            y=df_grouped_day.tolist(),
+                            name='Durchschnittlicher Umsatz in CHF',
+                            marker_color='rgba(251, 231, 239, 1)',
+                            text=df_grouped_day.tolist(),
+                            textposition='auto',
+                        )
+                    ],
+                    layout=go.Layout(
+                        title=f'Tagesübersicht: {location} ({start_date} bis {end_date})',
+                        xaxis=dict(title="Tag", showgrid=False, tickmode = "linear"),
+                        yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(size=12),
+                        margin=dict(l=40, r=40, t=40, b=40),
+                    )
+                ),
+                style={'height': 300}
+            ))
+
+            # Woche
+            df_grouped_week = df_location_filtered.copy()
+            df_grouped_week['WeekNumber'] = df_grouped_week['date'].dt.isocalendar().week
+            df_grouped_week['year'] = df_grouped_week['date'].dt.isocalendar().year
+            df_grouped_week = df_grouped_week.groupby(['WeekNumber', 'year'])["price"].mean().round(2)
+            graphs.append(dcc.Graph(
+                figure=go.Figure(
+                    data=[
+                        go.Bar(
+                            x=[idx[0] for idx in df_grouped_week.index.tolist()],
+                            y=df_grouped_week.tolist(),
+                            name='Durchschnittlicher Umsatz in CHF',
+                            marker_color='rgba(251, 231, 239, 1)',
+                            text=df_grouped_week.tolist(),
+                            textposition='auto',
+                        )
+                    ],
+                    layout=go.Layout(
+                        title=f'Wochenübersicht: {location} ({start_date} bis {end_date})',
+                        xaxis=dict(title="Woche", showgrid=False, tickmode = "linear"),
+                        yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                        paper_bgcolor='rgba(0,0,0,0)',
+                        plot_bgcolor='rgba(0,0,0,0)',
+                        font=dict(size=12),
+                        margin=dict(l=40, r=40, t=40, b=40),
+                    )
+                ),
+                style={'height': 300}
+            ))
+
+            # Monat
+            df_grouped_month = df_location_filtered.groupby(df_location_filtered["date"].dt.month)["price"].mean().round(2)
+            graphs.append(dcc.Graph(
+                figure=go.Figure(
+                    data=[
+                        go.Bar(
+                            x=df_grouped_month.index.tolist(),
+                            y=df_grouped_month.tolist(),
+                            name='Durchschnittlicher Umsatz in CHF',
+                            marker_color='rgba(251, 231, 239, 1)',
+                            text=df_grouped_month.tolist(),
+                            textposition='auto',
+                        )
+                    ],
+                    layout=go.Layout(
+                        title=f'Monatsübersicht: {location} ({start_date} bis {end_date})',
+                        xaxis=dict(title="Monat", showgrid=False, tickmode = "linear"),
                         yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
                         paper_bgcolor='rgba(0,0,0,0)',
                         plot_bgcolor='rgba(0,0,0,0)',
