@@ -11,6 +11,8 @@ app = dash.Dash(__name__, suppress_callback_exceptions=True)
 app.layout = html.Div(children=[
     html.Div([
         html.H1('GdB Laboratorio Cockpit', style={'textAlign': 'center'}),
+        # Standortübersicht
+        html.H2('Standortübersicht', style={'textAlign': 'center'}),
         html.Div([
             html.Div([
                 html.Label('Wählen Sie Standorte:', style={'fontWeight': 'bold'}),

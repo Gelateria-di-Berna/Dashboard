@@ -98,7 +98,7 @@ class Dashboard():
                         )
                     ],
                     layout=go.Layout(
-                        title=f'Stundenübersicht: {location} ({start_date} bis {end_date})',
+                        title=f'Stundenübersicht: {location}',
                         xaxis=dict(title='Uhrzeit', showgrid=False, tickmode = "linear"),
                         yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -125,7 +125,7 @@ class Dashboard():
                         )
                     ],
                     layout=go.Layout(
-                        title=f'Tagesübersicht: {location} ({start_date} bis {end_date})',
+                        title=f'Tagesübersicht: {location}',
                         xaxis=dict(title="Tag", showgrid=False, tickmode = "linear"),
                         yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -155,7 +155,7 @@ class Dashboard():
                         )
                     ],
                     layout=go.Layout(
-                        title=f'Wochenübersicht: {location} ({start_date} bis {end_date})',
+                        title=f'Wochenübersicht: {location}',
                         xaxis=dict(title="Woche", showgrid=False, tickmode = "linear"),
                         yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
                         paper_bgcolor='rgba(0,0,0,0)',
@@ -182,7 +182,7 @@ class Dashboard():
                         )
                     ],
                     layout=go.Layout(
-                        title=f'Monatsübersicht: {location} ({start_date} bis {end_date})',
+                        title=f'Monatsübersicht: {location}',
                         xaxis=dict(title="Monat", showgrid=False, tickmode = "linear"),
                         yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
                         paper_bgcolor='rgba(0,0,0,0)',
