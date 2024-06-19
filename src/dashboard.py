@@ -195,3 +195,133 @@ class Dashboard():
             ))
 
         return graphs
+
+    def get_line_graphs(self, selected_locations: list[str], start_date: str|datetime, end_date: str|datetime) -> list[dcc.Graph]:
+        graphs: list[dcc.Graph] = []
+        hourly_data: list[go.Scatter] = []
+        day_data: list[go.Scatter] = []
+        week_data: list[go.Scatter] = []
+        month_data: list[go.Scatter] = []
+
+        # Filter data for date range
+        df_date_filtered: pd.DataFrame = self.filter_date(start_date, end_date)
+
+        # Create data for line plot
+        for location in selected_locations:
+            # Filter data for location
+            df_location_filtered: pd.DataFrame = df_date_filtered[df_date_filtered["location"] == location]
+            # Group data
+            ## Hour
+            df_grouped_hour = df_location_filtered.groupby(df_location_filtered["date"].dt.hour)["price"].mean().round(2)
+            ## Day
+            df_grouped_day = df_location_filtered.groupby(df_location_filtered["date"].dt.day)["price"].mean().round(2)
+            ## Week
+            df_grouped_week = df_location_filtered.copy()
+            df_grouped_week['WeekNumber'] = df_grouped_week['date'].dt.isocalendar().week
+            df_grouped_week['year'] = df_grouped_week['date'].dt.isocalendar().year
+            df_grouped_week = df_grouped_week.groupby(['WeekNumber', 'year'])["price"].mean().round(2)
+            ## Month
+            df_grouped_month = df_location_filtered.groupby(df_location_filtered["date"].dt.month)["price"].mean().round(2)
+
+            hourly_data.append(
+                go.Scatter(
+                        x=df_grouped_hour.index.tolist(),
+                        y=df_grouped_hour.tolist(),
+                        mode='lines',
+                        name=f"{location}",
+                    )
+            )
+            day_data.append(
+                go.Scatter(
+                        x=df_grouped_day.index.tolist(),
+                        y=df_grouped_day.tolist(),
+                        mode='lines',
+                        name=f"{location}",
+                    )
+            )
+            week_data.append(
+                go.Scatter(
+                        x=[idx[0] for idx in df_grouped_week.index.tolist()],
+                        y=df_grouped_week.tolist(),
+                        mode='lines',
+                        name=f"{location}",
+                    )
+            )
+            month_data.append(
+                go.Scatter(
+                        x=df_grouped_month.index.tolist(),
+                        y=df_grouped_month.tolist(),
+                        mode='lines',
+                        name=f"{location}",
+                    )
+            )
+
+        # Stunde
+        graphs.append(dcc.Graph(
+            figure=go.Figure(
+                data= hourly_data,
+                layout=go.Layout(
+                    title='Stundenübersicht',
+                    xaxis=dict(title='Uhrzeit', showgrid=False, tickmode="linear"),
+                    yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(size=12),
+                    margin=dict(l=40, r=40, t=40, b=40),
+                )
+            ),
+            style={'height': 300}
+        ))
+
+        # Tag
+        graphs.append(dcc.Graph(
+            figure=go.Figure(
+                data= day_data,
+                layout=go.Layout(
+                    title='Tagesübersicht',
+                    xaxis=dict(title='Tag', showgrid=False, tickmode="linear"),
+                    yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(size=12),
+                    margin=dict(l=40, r=40, t=40, b=40),
+                )
+            ),
+            style={'height': 300}
+        ))
+
+        # Woche
+        graphs.append(dcc.Graph(
+            figure=go.Figure(
+                data= week_data,
+                layout=go.Layout(
+                    title='Wochenübersicht',
+                    xaxis=dict(title='Woche', showgrid=False, tickmode="linear"),
+                    yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(size=12),
+                    margin=dict(l=40, r=40, t=40, b=40),
+                )
+            ),
+            style={'height': 300}
+        ))
+
+        # Monat
+        graphs.append(dcc.Graph(
+            figure=go.Figure(
+                data= month_data,
+                layout=go.Layout(
+                    title='Monatsübersicht',
+                    xaxis=dict(title='Monat', showgrid=False, tickmode="linear"),
+                    yaxis=dict(title='Durchschnittlicher Umsatz in CHF', showgrid=False),
+                    paper_bgcolor='rgba(0,0,0,0)',
+                    plot_bgcolor='rgba(0,0,0,0)',
+                    font=dict(size=12),
+                    margin=dict(l=40, r=40, t=40, b=40),
+                )
+            ),
+            style={'height': 300}
+        ))
+
+        return graphs

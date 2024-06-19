@@ -3,9 +3,9 @@ from dash import dcc, html, Input, Output
 from datetime import datetime
 from src.dashboard import Dashboard
 
-dashboard = Dashboard()
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
+dashboard = Dashboard()
 
 # Define the app layout with improved styling
 app.layout = html.Div(children=[
@@ -46,7 +46,7 @@ app.layout = html.Div(children=[
 )
 
 def update_output(selected_locations, start_date: str|datetime, end_date: str|datetime) -> list[dcc.Graph]:
-    return dashboard.get_bar_graphs(selected_locations, start_date, end_date)
+    return dashboard.get_line_graphs(selected_locations, start_date, end_date)
 
 # Run the server
 if __name__ == '__main__':
