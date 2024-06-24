@@ -1,8 +1,7 @@
 import dash
 from dash import dcc, html, Input, Output
-from datetime import datetime
+from datetime import datetime, timedelta
 from src.dashboard import Dashboard
-
 
 app = dash.Dash(__name__, suppress_callback_exceptions=True)
 dashboard = Dashboard()
@@ -25,10 +24,10 @@ app.layout = html.Div(children=[
                 html.Label('Wählen Sie das Datum/die Woche:', style={'fontWeight': 'bold', 'marginTop': '20px'}),
                 dcc.DatePickerRange(
                     id='date-picker-range',
-                    start_date=datetime.strptime("01.04.2020", "%d.%m.%Y").date(),
-                    end_date=datetime.strptime("30.04.2020", "%d.%m.%Y").date(),
-                    #start_date=datetime.now().date() - timedelta(days=7),
-                    #end_date=datetime.now().date(),
+                    # start_date=datetime.strptime("01.04.2020", "%d.%m.%Y").date(),
+                    # end_date=datetime.strptime("30.04.2020", "%d.%m.%Y").date(),
+                    start_date=datetime.now().date() - timedelta(days=7),
+                    end_date=datetime.now().date(),
                     display_format='DD.MM.YYYY',
                     style={'marginTop': '10px'}
                 ),
